@@ -1,0 +1,9 @@
+@LIT_SITE_CFG_IN_HEADER@
+
+import sys
+
+config.symbolinjector_lib_dir = "@SYMBOLINJECTOR_LIB_DIR@"
+
+# Let the main config do the real work.
+config.loaded_site_config = True
+lit_config.load_config(config, "@SYMBOLINJECTOR_PROJECT_DIR@/test/lit.cfg")
