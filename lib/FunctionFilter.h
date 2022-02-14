@@ -5,11 +5,14 @@
 #ifndef INSTRO_LLVM_FUNCTIONFILTER_H
 #define INSTRO_LLVM_FUNCTIONFILTER_H
 
-#include <vector>
 #include <string>
+#include <unordered_set>
+
 
 class FunctionFilter {
-    std::vector<std::string> includedFunctionsMangled;
+    using ContainerT = std::unordered_set<std::string>;
+
+    ContainerT includedFunctionsMangled;
 public:
     FunctionFilter();
 
