@@ -18,7 +18,7 @@ void FunctionFilter::removeIncludedFunction(const std::string &f) {
 }
 
 bool FunctionFilter::accepts(const std::string &f) const {
-    return std::find(includedFunctionsMangled.begin(), includedFunctionsMangled.end(), f) != includedFunctionsMangled.end());
+    return std::find(includedFunctionsMangled.begin(), includedFunctionsMangled.end(), f) != includedFunctionsMangled.end();
 }
 
 bool readScorePFilterFile(FunctionFilter& filter, const std::string& filename) {
