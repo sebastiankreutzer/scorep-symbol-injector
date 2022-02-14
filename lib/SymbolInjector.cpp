@@ -12,6 +12,11 @@
 #include <map>
 #include <sstream>
 
+#include "FunctionFilter.h"
+
+#define LOG_ERR std::cerr << "[Symbol Injector] "
+#define LOG_OUT std::cout << "[Symbol Injector] "
+
 namespace symbolinjector{
 
     struct RemoveEnvInScope {
@@ -51,7 +56,7 @@ namespace symbolinjector{
         char buffer[256];
         FILE *memory_map = fopen("/proc/self/maps", "r");
         if (!memory_map) {
-            std::cout << "Could not load memory map.\n";
+            LOG_OUT << "Could not load memory map.\n";
         }
 
         std::string addrRange;
@@ -92,7 +97,7 @@ namespace symbolinjector{
         char buffer[256] = {0};
         FILE *output = popen(command.c_str(), "r");
         if (!output) {
-            std::cerr << "Unable to execute nm to resolve symbol names.\n";
+            LOG_ERR << "Unable to execute nm to resolve symbol names.\n";
             return {};
         }
 
@@ -141,11 +146,11 @@ namespace symbolinjector{
             auto &filename = entry.path;
             auto table = loadSymbolTable(filename);
             if (table.empty()) {
-                std::cout << "Could not load symbols from " << filename << "\n";
+                LOG_ERR << "Could not load symbols from " << filename << "\n";
                 continue;
             }
 
-            std::cout << "Loaded " << table.size() << " symbols from " << filename << "\n";
+            //std::cout << "Loaded " << table.size() << " symbols from " << filename << "\n";
             //std::cout << "Starting address: " << entry.addrBegin << "\n";
             MappedSymTable mappedTable{std::move(table), entry};
             addrToSymTable[entry.addrBegin] = mappedTable;
@@ -166,12 +171,22 @@ namespace symbolinjector{
             if (strcmp(val, execFilename.c_str()) != 0) {
                 return;
             }
-            std::cout << "Executable will be tracked: SCOREP_EXECUTABLE is set to " << val << " and matches the current executable filename " << execFilename << "\n";
+            LOG_OUT << "Executable will be tracked: SCOREP_EXECUTABLE is set to " << val << " and matches the current executable filename " << execFilename << "\n";
         } else {
-            std::cout << "Please set SCOREP_EXECUTABLE=" << execFilename << ", if you want to track calls in this application.\n";
+            LOG_OUT << "Please set SCOREP_EXECUTABLE=" << execFilename << ", if you want to track calls in this application.\n";
             return;
         }
-        std::cout << "Retrieving symbols for executable " << execPath << "\n";
+        //std::cout << "Retrieving symbols for executable " << execPath << "\n";
+
+        // Load ScoreP filter file
+        FunctionFilter filter;
+        auto filterEnv = std::getenv("SCOREP_FILTERING_FILE");
+        if (filterEnv) {
+            bool success = readScorePFilterFile(filter, filterEnv);
+            if (!success)  {
+                LOG_ERR << "Unable to read Score-P filtering file from " << filterEnv << "\n";
+            }
+        }
 
         // Initializing ScoreP
         SCOREP_InitMeasurement();
@@ -181,13 +196,23 @@ namespace symbolinjector{
 
         auto& symTables = symRetriever.getMappedSymTables();
 
+        size_t numFound = 0;
+        size_t numInserted = 0;
+
         for (auto&& [startAddr, table] : symTables) {
             for (auto&& [addr, symName] : table.table) {
                 auto addrInProc = mapAddrToProc(addr, table);
                 // TODO: Demangling
-                scorep_compiler_hash_put(addrInProc, symName.c_str(), symName.c_str(), "", 0);
+                if (filter.accepts(symName)) {
+                    scorep_compiler_hash_put(addrInProc, symName.c_str(), symName.c_str(), "", 0);
+                    ++numInserted;
+                }
+                ++numFound;
             }
         }
+
+        LOG_OUT << "Symbols found: " << numFound << "\n";
+        LOG_OUT << "Symbols registered: " << numInserted << "\n";
 
     }
 }
