@@ -11,6 +11,7 @@
 #include <cstring>
 #include <map>
 #include <sstream>
+#include <chrono>
 
 #include "FunctionFilter.h"
 
@@ -18,6 +19,21 @@
 #define LOG_OUT std::cout << "[Symbol Injector] "
 
 namespace symbolinjector{
+
+    class Timer {
+        using clock = std::chrono::steady_clock;
+        std::string msg;
+        clock::time_point start;
+    public:
+        Timer(const std::string& msg) : msg(msg), start(clock::now()){
+        }
+        ~Timer() {
+            auto stop = clock::now();
+            auto diff = stop - start;
+            auto secs = std::chrono::duration_cast<std::chrono::milliseconds>(diff).count() / 1000.0;
+            LOG_OUT << msg << secs << " seconds\n";
+        }
+    };
 
     struct RemoveEnvInScope {
 
@@ -164,6 +180,7 @@ namespace symbolinjector{
     }
 
     RunBeforeMain::RunBeforeMain() {
+        Timer timer("Symbol lookup and registration took ");
         auto execPath = getExecPath();
         auto execFilename = execPath.substr(execPath.find_last_of('/') + 1);
         if (auto val = getenv("SCOREP_EXECUTABLE"); val) {
