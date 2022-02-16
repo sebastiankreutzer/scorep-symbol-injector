@@ -10,11 +10,11 @@
 FunctionFilter::FunctionFilter() {}
 
 void FunctionFilter::addIncludedFunction(const std::string &f) {
-    includedFunctionsMangled.insert(f);
+    includedFunctionsMangled.push_back(f);
 }
 
 void FunctionFilter::removeIncludedFunction(const std::string &f) {
-    includedFunctionsMangled.erase(f);
+    includedFunctionsMangled.erase(std::remove(includedFunctionsMangled.begin(), includedFunctionsMangled.end(), f), includedFunctionsMangled.end());
 }
 
 bool FunctionFilter::accepts(const std::string &f) const {

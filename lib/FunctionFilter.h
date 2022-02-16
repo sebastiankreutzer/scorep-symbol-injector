@@ -7,10 +7,11 @@
 
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 
 class FunctionFilter {
-    using ContainerT = std::unordered_set<std::string>;
+    using ContainerT = std::vector<std::string>;
 
     ContainerT includedFunctionsMangled;
 public:
