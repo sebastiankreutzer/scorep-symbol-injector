@@ -197,12 +197,19 @@ namespace symbolinjector{
 
         // Load ScoreP filter file
         FunctionFilter filter;
+	bool filterFound = false;
         auto filterEnv = std::getenv("SCOREP_FILTERING_FILE");
-        if (filterEnv) {
-            bool success = readScorePFilterFile(filter, filterEnv);
-            if (!success)  {
+	if (!filterEnv || std::string(filterEnv).empty()) {
+	    // Can be used when ScoreP runtime filtering should be avoided
+            filterEnv = std::getenv("SYMBOL_INJECTOR_FILTERING_FILE");
+	    LOG_OUT << "Reading filter from SYMBOL_INJECTOR_FILTERING_FILE\n";
+
+	}
+        if (filterEnv && !std::string(filterEnv).empty()) {
+            filterFound = readScorePFilterFile(filter, filterEnv);
+            if (!filterFound)  {
                 LOG_ERR << "Unable to read Score-P filtering file from " << filterEnv << "\n";
-            }
+            } 
         }
 
         // Initializing ScoreP
@@ -220,7 +227,7 @@ namespace symbolinjector{
             for (auto&& [addr, symName] : table.table) {
                 auto addrInProc = mapAddrToProc(addr, table);
                 // TODO: Demangling
-                if (filter.accepts(symName)) {
+                if (!filterFound || filter.accepts(symName)) {
                     scorep_compiler_hash_put(addrInProc, symName.c_str(), symName.c_str(), "", 0);
                     ++numInserted;
                 }
