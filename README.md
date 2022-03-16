@@ -6,7 +6,7 @@ Currently, works only on Linux.
 
  - [Score-P](https://www.vi-hps.org/projects/score-p/)
  - LLVM (for testing purposes)
- - CMake (>=3.17)
+ - CMake (>=3.15)
 
 ## Building
 
