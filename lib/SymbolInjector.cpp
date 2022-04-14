@@ -212,6 +212,13 @@ namespace symbolinjector{
             } 
         }
 
+        int verbosity = 1;
+        auto verbosityEnv = std::getenv("SYMBOL_INJECTOR_VERBOSITY");
+        if (verbosityEnv) {
+          verbosity = std::atoi(verbosityEnv);
+        }
+
+
         // Initializing ScoreP
         SCOREP_InitMeasurement();
 
@@ -223,12 +230,19 @@ namespace symbolinjector{
         size_t numFound = 0;
         size_t numInserted = 0;
 
+        if (verbosity >= 2) {
+          LOG_OUT << "Registering functions:\n";
+        }
+
         for (auto&& [startAddr, table] : symTables) {
             for (auto&& [addr, symName] : table.table) {
                 auto addrInProc = mapAddrToProc(addr, table);
                 // TODO: Demangling
                 if (!filterFound || filter.accepts(symName)) {
                     scorep_compiler_hash_put(addrInProc, symName.c_str(), symName.c_str(), "", 0);
+                    if (verbosity >= 2) {
+                      LOG_OUT << symName << "\n";
+                    }
                     ++numInserted;
                 }
                 ++numFound;
